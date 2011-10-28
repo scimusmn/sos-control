@@ -15,10 +15,9 @@ proc usage {} {
 
   ARGUMENTS:
     playlist_name    Name of the SOS playlist
-    config_file      Relative path to the config file
 
   EXAMPLE:
-    reload_playlist blue_marble.sos config/my_sos.inc
+    reload_playlist blue_marble.sos
 
   "]
   send_error $USAGE
@@ -33,11 +32,6 @@ if {[llength $argv] == 0} usage
 # Playlist name
 set playlist [lindex $argv 0]
 
-# SOS connection config file
-set config [lindex $argv 1]
-
-# Load SOS connection details
-source $config
 
 # Check for a defined playlist
 if {$playlist eq ""} {
@@ -45,17 +39,8 @@ if {$playlist eq ""} {
   usage
 }
 
-# Check for a defined config file
-if {$config eq ""} {
-  puts "ERROR: You didn't specify the path to your SOS config file."
-  usage
-}
-
-# Check to see if the config file exists.
-if {[file exists $config]} {
-  puts "ERROR: The config file you specified does not exist."
-  usage
-}
+# Load SOS connection details
+source [file dirname [info script]]/config/settings.inc
 
 # :TODO: check for the variables in the config file
 
@@ -84,8 +69,8 @@ if {[file executable /usr/bin/telnet]} {
 # :TODO: Add a final check here that just runs telet and sees if an 
 # error comes up. Maybe the user has telnet in their path.
 
-# Telnet to remote server
-spawn $TELNETBIN $sos_ip
+# Telnet to the remote SOS using the SOS automation protocol port
+spawn $TELNETBIN $sos_ip 2468
 expect {
     # Handle telnet connection errors
     -nocase "nodename nor servname provided, or not known" {
