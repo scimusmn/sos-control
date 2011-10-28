@@ -68,6 +68,7 @@ set prompt "(%|#|\\\$) $"
 set ready R
 
 # Define error codes
+set E_NO_TELNET   2 ;# no usable Telnet command
 set E_NO_CONNECT  3 ;# failure to connect to remote server (timed out)
 set E_UNKNOWN     25 ;# unexpected failure
 
@@ -86,7 +87,17 @@ if {[file executable /usr/bin/telnet]} {
 # Telnet to remote server
 spawn $TELNETBIN $sos_ip
 expect {
-    # Enable the automation control
+    # Handle telnet connection errors
+    -nocase "nodename nor servname provided, or not known" {
+      send_error "\n ERROR: Unable to connect to the SOS \n";
+      exit $E_NO_CONNECT;
+    }
+    -nocase "telnet: Unable to connect to remote host" {
+      send_error "\n ERROR: Unable to connect to the SOS \n";
+      exit $E_NO_CONNECT;
+    }
+
+    # If we connect, enable the automation control
     -nocase "Escape character is '^]'." { send "enable\r"; exp_continue; }
 
     # If it worked the SOS should return the ready state
