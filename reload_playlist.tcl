@@ -52,7 +52,7 @@ if {$config eq ""} {
 }
 
 # Check to see if the config file exists.
-if {file exists $config} {
+if {[file exists $config]} {
   puts "ERROR: The config file you specified does not exist."
   usage
 }
