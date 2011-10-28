@@ -68,12 +68,7 @@ set prompt "(%|#|\\\$) $"
 set ready R
 
 # Define error codes
-set E_NO_SSH      2 ;# can't find a usable SSH on our system
 set E_NO_CONNECT  3 ;# failure to connect to remote server (timed out)
-set E_WRONG_PASS  4 ;# password provided does not work
-set E_WC_NO_EXIST 5 ;# working copy directory doesn't exist
-set E_GIT_ERROR   6 ;# there is something wrong with the remote git server
-set E_WC_NOT_GIT  7 ;# working copy not a git repo
 set E_UNKNOWN     25 ;# unexpected failure
 
 # Find the Telnet binary on our system
@@ -85,6 +80,8 @@ if {[file executable /usr/bin/telnet]} {
   send_error "ERROR: Can't find a usable TELNET on this system.\n"
   exit $E_NO_TELNET
 }
+# :TODO: Add a final check here that just runs telet and sees if an 
+# error comes up. Maybe the user has telnet in their path.
 
 # Telnet to remote server
 spawn $TELNETBIN $sos_ip
