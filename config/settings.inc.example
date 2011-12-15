@@ -1,0 +1,6 @@
+# Copy this example file to settings.inc
+#
+# Set the IP address of your SOS machine below.
+
+global sos_ip
+set sos_ip ###.###.###.###
