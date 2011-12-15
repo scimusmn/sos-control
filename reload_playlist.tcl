@@ -11,10 +11,12 @@ proc usage {} {
   This script connects with the SOS system and reloads a 
   defined playlist
 
-  USAGE: reload_playlist playlist_name
+  USAGE: reload_playlist playlist_name clip_num
 
   ARGUMENTS:
     playlist_name    Name of the SOS playlist
+    clip_num         (Optional) Clipnumber in playlist to play.
+                     Defaults to 1.
 
   EXAMPLE:
     reload_playlist blue_marble.sos
@@ -32,6 +34,11 @@ if {[llength $argv] == 0} usage
 # Playlist name
 set playlist [lindex $argv 0]
 
+# Clip number
+set clip [lindex $argv 1]
+if {$clip eq ""} {
+  set clip 1
+}
 
 # Check for a defined playlist
 if {$playlist eq ""} {
@@ -90,12 +97,20 @@ expect {
 }
 
 # Load the defined playlist
-spawn open_playlist $playlist
-
+send "open_playlist $playlist\r";
 expect {
   # :TODO: Write a new function that isn't usage() that helps
   # explain the E04 error
-  -nocase "EO4" { send "exit\r"; usage; }
+  -nocase "E04" { send "exit\r"; usage; }
+  $ready
+}
+
+# Play the specified clip in the playlist
+send "play $clip\r";
+expect {
+  # :TODO: Write a new function that isn't usage() that helps
+  # explain the E04 error
+  -nocase "E04" { send "exit\r"; usage; }
   $ready
 }
 
