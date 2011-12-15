@@ -11,14 +11,15 @@ proc usage {} {
   This script connects with the SOS system and reloads a 
   defined playlist
 
-  USAGE: reload_playlist playlist_name
+  USAGE: reload_playlist playlist_name clip_num
 
   ARGUMENTS:
     playlist_name    Name of the SOS playlist
-    config_file      Relative path to the config file
+    clip_num         (Optional) Clipnumber in playlist to play.
+                     Defaults to 1.
 
   EXAMPLE:
-    reload_playlist blue_marble.sos config/my_sos.inc
+    reload_playlist blue_marble.sos
 
   "]
   send_error $USAGE
@@ -33,11 +34,11 @@ if {[llength $argv] == 0} usage
 # Playlist name
 set playlist [lindex $argv 0]
 
-# SOS connection config file
-set config [lindex $argv 1]
-
-# Load SOS connection details
-source $config
+# Clip number
+set clip [lindex $argv 1]
+if {$clip eq ""} {
+  set clip 1
+}
 
 # Check for a defined playlist
 if {$playlist eq ""} {
@@ -45,17 +46,8 @@ if {$playlist eq ""} {
   usage
 }
 
-# Check for a defined config file
-if {$config eq ""} {
-  puts "ERROR: You didn't specify the path to your SOS config file."
-  usage
-}
-
-# Check to see if the config file exists.
-if {file exists $config} {
-  puts "ERROR: The config file you specified does not exist."
-  usage
-}
+# Load SOS connection details
+source [file dirname [info script]]/config/settings.inc
 
 # :TODO: check for the variables in the config file
 
@@ -68,6 +60,7 @@ set prompt "(%|#|\\\$) $"
 set ready R
 
 # Define error codes
+set E_NO_TELNET   2 ;# no usable Telnet command
 set E_NO_CONNECT  3 ;# failure to connect to remote server (timed out)
 set E_UNKNOWN     25 ;# unexpected failure
 
@@ -83,10 +76,20 @@ if {[file executable /usr/bin/telnet]} {
 # :TODO: Add a final check here that just runs telet and sees if an 
 # error comes up. Maybe the user has telnet in their path.
 
-# Telnet to remote server
-spawn $TELNETBIN $sos_ip
+# Telnet to the remote SOS using the SOS automation protocol port
+spawn $TELNETBIN $sos_ip 2468
 expect {
-    # Enable the automation control
+    # Handle telnet connection errors
+    -nocase "nodename nor servname provided, or not known" {
+      send_error "\n ERROR: Unable to connect to the SOS \n";
+      exit $E_NO_CONNECT;
+    }
+    -nocase "telnet: Unable to connect to remote host" {
+      send_error "\n ERROR: Unable to connect to the SOS \n";
+      exit $E_NO_CONNECT;
+    }
+
+    # If we connect, enable the automation control
     -nocase "Escape character is '^]'." { send "enable\r"; exp_continue; }
 
     # If it worked the SOS should return the ready state
@@ -94,12 +97,20 @@ expect {
 }
 
 # Load the defined playlist
-spawn open_playlist $playlist
-
+send "open_playlist $playlist\r";
 expect {
   # :TODO: Write a new function that isn't usage() that helps
   # explain the E04 error
-  -nocase "EO4" { send "exit\r"; usage; }
+  -nocase "E04" { send "exit\r"; usage; }
+  $ready
+}
+
+# Play the specified clip in the playlist
+send "play $clip\r";
+expect {
+  # :TODO: Write a new function that isn't usage() that helps
+  # explain the E04 error
+  -nocase "E04" { send "exit\r"; usage; }
   $ready
 }
 
